@@ -3,7 +3,13 @@ class StudentsController < ApplicationController
     rescue_from ActiveRecord::RecordNotFound, with: :render_record_not_found_response
 
     def index
-        render json: Student.all, status: :ok
+        if params[:instructor_id]
+            instructor = find_instructor
+            students = instructor.students
+        else
+            students = Student.all
+        end
+        render json: students, include: :instructor
     end
 
     def show
@@ -12,8 +18,12 @@ class StudentsController < ApplicationController
     end
 
     def create
-        instructor = find_instructor
-        student = instructor.students.create!(student_params)
+        if params[:instructor_id]
+            instructor = find_instructor
+            student = instructor.students.create!(student_params)
+        else
+            :render_unprocessable_entity_response
+        end
         render json: student, status: :created
     end
 
@@ -40,11 +50,11 @@ class StudentsController < ApplicationController
     end
 
     def find_instructor
-        Instructor.find(params[:id])
+        Instructor.find(params[:instructor_id])
     end
 
     def render_unprocessable_entity_response(exception)
-        render json: {error: exception.errors.full_messages}, status: :unprocessable_entity
+        render json: {errors: exception.record.errors.full_messages}, status: :unprocessable_entity
     end
 
     def render_record_not_found_response
