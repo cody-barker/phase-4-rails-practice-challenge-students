@@ -21,16 +21,20 @@ class StudentsController < ApplicationController
         if params[:instructor_id]
             instructor = find_instructor
             student = instructor.students.create!(student_params)
+            render json: student, include: :instructor, status: :created
         else
             :render_unprocessable_entity_response
         end
-        render json: student, status: :created
     end
 
     def update
-        student = find_student
-        student.update(student_params)
-        render json: student, status: :accepted
+        if params[:instructor_id]
+            student = find_student
+            student.update!(student_params)
+            render json: student, include: :instructor, status: :accepted
+        else
+            :render_record_not_found_response
+        end
     end
 
     def destroy
